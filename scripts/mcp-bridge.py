@@ -8,6 +8,7 @@ through a Cloudflare HTTPS tunnel.
 
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -47,6 +48,11 @@ def expand_path(value):
     return os.path.expandvars(os.path.expanduser(value))
 
 
+def extract_cloudflare_url(line):
+    match = re.search(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com", line)
+    return match.group(0) if match else None
+
+
 def create_default_config():
     if CONFIG_FILE.exists():
         return
@@ -69,10 +75,15 @@ def load_config():
         return json.load(file)
 
 
-def start_process(command, name):
+def start_process(command, name, capture_output=False):
     print(f"[+] Starting {name}...")
     try:
-        process = subprocess.Popen(command)
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE if capture_output else None,
+            stderr=subprocess.STDOUT if capture_output else None,
+            text=True if capture_output else False
+        )
         processes.append(process)
         return process
     except Exception as error:
@@ -138,15 +149,35 @@ def main():
     time.sleep(2)
 
     if tunnel_enabled:
-        start_process([
+        cloudflare_process = start_process([
             "cloudflared",
             "tunnel",
             "--url",
             f"http://localhost:{port}"
-        ], "Cloudflare Tunnel")
+        ], "Cloudflare Tunnel", capture_output=True)
 
-        print("\nCloudflare tunnel started.")
-        print("Copy the HTTPS URL from cloudflared output into your AI client.")
+        endpoint_found = False
+        if cloudflare_process.stdout:
+            start_time = time.time()
+            while time.time() - start_time < 15:
+                line = cloudflare_process.stdout.readline()
+                if not line:
+                    time.sleep(0.1)
+                    continue
+
+                url = extract_cloudflare_url(line)
+                if url:
+                    print("\nCloudflare tunnel started.")
+                    print("\nYour MCP endpoint:")
+                    print(f"{url}/mcp")
+                    print("\nCopy this URL into your AI client.")
+                    print("\nQuick Tunnel warning: This endpoint is temporary and changes after restart, shutdown, or sleep.")
+                    endpoint_found = True
+                    break
+
+        if not endpoint_found:
+            print("\nCloudflare tunnel started.")
+            print("Check the cloudflared output above for your HTTPS MCP endpoint.")
     else:
         print(f"\nLocal MCP endpoint: http://localhost:{port}")
 
