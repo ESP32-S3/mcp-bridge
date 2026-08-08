@@ -1,8 +1,13 @@
 {
   "port": 8000,
   "serverName": "Example MCP Server",
-  "mcpCommand": "python server.py",
-  "enableCloudflareTunnel": true,
-  "endpointPath": "/mcp",
-  "healthCheck": true
+  "server": {
+    "command": "python",
+    "args": [
+      "server.py"
+    ]
+  },
+  "cloudflare": {
+    "enabled": true
+  }
 }
