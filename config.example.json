@@ -3,5 +3,6 @@
   "serverName": "Example MCP Server",
   "mcpCommand": "python server.py",
   "enableCloudflareTunnel": true,
+  "endpointPath": "/mcp",
   "healthCheck": true
 }
