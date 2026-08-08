@@ -103,13 +103,54 @@ https://example.trycloudflare.com/mcp
 
 Paste this URL into your MCP-compatible AI client.
 
+## Cloudflare Quick Tunnel Limitations
+
+MCP Bridge supports Cloudflare Quick Tunnels for easy setup. However, Quick Tunnels are temporary development endpoints.
+
+If your computer:
+
+- goes to sleep
+- shuts down
+- loses network connectivity
+- MCP Bridge is closed or restarted
+
+your tunnel will be destroyed and a new HTTPS endpoint may be generated.
+
+When this happens:
+
+1. Start MCP Bridge again:
+
+```bash
+python scripts/mcp-bridge.py
+```
+
+2. Copy the new HTTPS MCP endpoint.
+
+3. Update your AI client's MCP configuration with the new URL.
+
+Example:
+
+Old:
+
+```
+https://old-name.trycloudflare.com/mcp
+```
+
+New:
+
+```
+https://new-name.trycloudflare.com/mcp
+```
+
+For permanent deployments, use a configured Cloudflare Tunnel with a hostname instead of Quick Tunnel mode.
+
 ## Security
 
 A public MCP endpoint exposes the tools provided by your MCP server.
 
 For development:
 
-- Cloudflare Quick Tunnels are convenient
+- Cloudflare Quick Tunnels are convenient but temporary
 - Do not expose sensitive tools publicly
 - Only share URLs with trusted users
 
@@ -143,6 +184,10 @@ Check that your MCP server supports the expected transport and that the stdio pr
 **Tunnel URL unavailable**
 
 Confirm Cloudflare Tunnel is installed and running.
+
+**My endpoint stopped working after sleep/restart**
+
+This is expected with Cloudflare Quick Tunnels. Restart MCP Bridge and replace the old endpoint in your AI client configuration.
 
 ## Roadmap
 
