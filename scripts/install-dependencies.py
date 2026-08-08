@@ -52,6 +52,36 @@ def check_node():
         print("✗ Node.js missing. Install Node.js from https://nodejs.org/")
 
 
+def install_linux_cloudflared():
+    distro = ""
+
+    try:
+        with open("/etc/os-release", "r", encoding="utf-8") as file:
+            data = file.read().lower()
+            distro = data
+    except FileNotFoundError:
+        pass
+
+    if "debian" in distro or "ubuntu" in distro:
+        print("Installing Cloudflared repository for Debian/Ubuntu...")
+        run(["bash", "-c", "curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null"])
+        run(["bash", "-c", "echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main' | sudo tee /etc/apt/sources.list.d/cloudflared.list"])
+        run(["sudo", "apt", "update"])
+        run(["sudo", "apt", "install", "-y", "cloudflared"])
+
+    elif command_exists("dnf"):
+        run(["sudo", "dnf", "install", "-y", "cloudflared"])
+
+    elif command_exists("yum"):
+        run(["sudo", "yum", "install", "-y", "cloudflared"])
+
+    elif command_exists("pacman"):
+        print("Arch detected. Install cloudflared using your preferred AUR/package method.")
+
+    else:
+        print("✗ Unsupported Linux distribution. Install cloudflared manually.")
+
+
 def install_cloudflared():
     if command_exists("cloudflared"):
         print("✓ Cloudflared detected")
@@ -73,10 +103,7 @@ def install_cloudflared():
             print("✗ Homebrew unavailable. Install cloudflared manually.")
 
     elif system == "Linux":
-        if command_exists("apt"):
-            run(["sudo", "apt", "install", "cloudflared"])
-        else:
-            print("✗ Automatic Linux install unavailable. Install cloudflared manually.")
+        install_linux_cloudflared()
 
     else:
         print(f"✗ Unsupported platform: {system}")
