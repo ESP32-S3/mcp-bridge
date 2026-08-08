@@ -6,40 +6,72 @@ MCP Bridge lets remote AI clients use local MCP servers by converting a local st
 
 ## Setup
 
-1. Install Node.js.
-2. Install Supergateway:
+### 1. Install dependencies
 
-```
+Install:
+
+- Python 3.10+
+- Node.js
+- Supergateway
+
+Optional:
+
+- Cloudflare Tunnel (for public HTTPS access)
+
+Install Supergateway:
+
+```bash
 npm install -g supergateway
 ```
 
-3. Install Cloudflare Tunnel if you want internet access.
+### 2. Configure your MCP server
 
-4. Copy configuration:
+Copy:
 
 ```
 config.example.json -> config.json
 ```
 
-5. Set your MCP command.
-
-Example:
+Edit the server section:
 
 ```json
 {
   "port": 8000,
   "serverName": "My Server",
-  "mcpCommand": "python server.py"
+  "server": {
+    "command": "python",
+    "args": ["server.py"]
+  },
+  "cloudflare": {
+    "enabled": true
+  }
 }
 ```
 
-6. Start:
+The command and arguments are portable across Windows, macOS, and Linux.
 
-```powershell
-./scripts/mcp-bridge.ps1
+### 3. Start MCP Bridge
+
+Run:
+
+```bash
+python scripts/mcp-bridge.py
 ```
 
-7. Copy the generated `/mcp` URL into your AI client.
+The launcher will:
+
+1. Start your local MCP server
+2. Start Supergateway
+3. Start Cloudflare Tunnel if enabled
+4. Provide your HTTPS MCP endpoint
+
+Example:
+
+```
+https://example.trycloudflare.com/mcp
+```
+
+Copy that URL into your MCP-compatible AI client.
 
 ## Safety
 
