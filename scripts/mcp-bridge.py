@@ -1,42 +1,121 @@
 #!/usr/bin/env python3
+"""
+MCP Bridge - Cross platform launcher
+
+Starts:
+1. Local MCP stdio server through Supergateway
+2. Optional Cloudflare Tunnel HTTPS endpoint
+
+Works on Windows, macOS, and Linux.
+"""
 
 import json
+import os
 import shutil
+import signal
 import subprocess
 import sys
+import time
+from pathlib import Path
 
-config_file = sys.argv[1] if len(sys.argv) > 1 else "config.json"
+CONFIG_FILE = Path(sys.argv[1] if len(sys.argv) > 1 else "config.json")
+processes = []
 
-try:
-    with open(config_file, "r") as f:
-        config = json.load(f)
-except FileNotFoundError:
-    print(f"Missing {config_file}. Copy config.example.json to config.json")
+
+def fail(message):
+    print(f"\n[ERROR] {message}")
     sys.exit(1)
 
-for dependency in ["node", "supergateway"]:
-    if shutil.which(dependency) is None:
-        print(f"Missing dependency: {dependency}")
-        sys.exit(1)
 
-port = str(config.get("port", 8000))
-command = config["mcpCommand"]
+def check_command(name):
+    if shutil.which(name) is None:
+        fail(f"Missing dependency: {name}. Install it and try again.")
 
-print("Starting MCP Bridge")
-print(f"Port: {port}")
-print(f"MCP Server: {config.get('serverName', 'Unknown')}")
 
-process = subprocess.Popen([
-    "supergateway",
-    "--stdio",
-    command,
-    "--outputTransport",
-    "streamableHttp",
-    "--port",
-    port
-])
+def load_config():
+    if not CONFIG_FILE.exists():
+        fail(f"Missing {CONFIG_FILE}. Copy config.example.json to config.json")
 
-try:
-    process.wait()
-except KeyboardInterrupt:
-    process.terminate()
+    with open(CONFIG_FILE, "r", encoding="utf-8") as file:
+        return json.load(file)
+
+
+def start_process(command, name):
+    print(f"[+] Starting {name}...")
+    try:
+        process = subprocess.Popen(command)
+        processes.append(process)
+        return process
+    except Exception as error:
+        fail(f"Could not start {name}: {error}")
+
+
+def shutdown(*_):
+    print("\nStopping MCP Bridge...")
+    for process in processes:
+        try:
+            process.terminate()
+        except Exception:
+            pass
+    sys.exit(0)
+
+
+def main():
+    signal.signal(signal.SIGINT, shutdown)
+    signal.signal(signal.SIGTERM, shutdown)
+
+    config = load_config()
+
+    check_command("node")
+    check_command("supergateway")
+
+    tunnel_enabled = config.get("cloudflare", {}).get("enabled", True)
+
+    if tunnel_enabled:
+        check_command("cloudflared")
+
+    port = str(config.get("port", 8000))
+    server_name = config.get("serverName", "MCP Server")
+    command = config.get("mcpCommand")
+
+    if not command:
+        fail("mcpCommand is missing from config.json")
+
+    print("\nMCP Bridge")
+    print("==========")
+    print(f"Server: {server_name}")
+    print(f"Port: {port}")
+
+    start_process([
+        "supergateway",
+        "--stdio",
+        command,
+        "--outputTransport",
+        "streamableHttp",
+        "--port",
+        port,
+    ], "Supergateway")
+
+    time.sleep(2)
+
+    if tunnel_enabled:
+        start_process([
+            "cloudflared",
+            "tunnel",
+            "--url",
+            f"http://localhost:{port}"
+        ], "Cloudflare Tunnel")
+
+        print("\nCloudflare tunnel started.")
+        print("Check the cloudflared output above for your HTTPS MCP endpoint.")
+    else:
+        print(f"\nLocal MCP endpoint: http://localhost:{port}")
+
+    print("\nMCP Bridge is running. Press Ctrl+C to stop.")
+
+    while True:
+        time.sleep(1)
+
+
+if __name__ == "__main__":
+    main()
