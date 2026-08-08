@@ -32,6 +32,12 @@ def check_command(name):
         fail(f"Missing dependency: {name}. Install it and try again.")
 
 
+def expand_path(value):
+    if not isinstance(value, str):
+        return value
+    return os.path.expandvars(os.path.expanduser(value))
+
+
 def load_config():
     if not CONFIG_FILE.exists():
         fail(f"Missing {CONFIG_FILE}. Copy config.example.json to config.json")
@@ -76,25 +82,38 @@ def main():
 
     port = str(config.get("port", 8000))
     server_name = config.get("serverName", "MCP Server")
-    command = config.get("mcpCommand")
+
+    server = config.get("server")
+    if not server:
+        legacy_command = config.get("mcpCommand")
+        if legacy_command:
+            server = {"command": legacy_command, "args": []}
+        else:
+            fail("server configuration is missing from config.json")
+
+    command = expand_path(server.get("command"))
+    args = [expand_path(arg) for arg in server.get("args", [])]
 
     if not command:
-        fail("mcpCommand is missing from config.json")
+        fail("server.command is missing from config.json")
 
     print("\nMCP Bridge")
     print("==========")
     print(f"Server: {server_name}")
     print(f"Port: {port}")
 
-    start_process([
+    mcp_process = [
         "supergateway",
         "--stdio",
         command,
+        *args,
         "--outputTransport",
         "streamableHttp",
         "--port",
         port,
-    ], "Supergateway")
+    ]
+
+    start_process(mcp_process, "Supergateway")
 
     time.sleep(2)
 
