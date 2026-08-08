@@ -1,0 +1,7 @@
+{
+  "port": 8000,
+  "serverName": "Example MCP Server",
+  "mcpCommand": "python server.py",
+  "enableCloudflareTunnel": true,
+  "healthCheck": true
+}
