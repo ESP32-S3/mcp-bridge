@@ -6,7 +6,7 @@ Checks and installs the tools required to run MCP Bridge:
 - Python
 - Node.js / npm
 - Supergateway
-- Cloudflared (optional)
+- Cloudflared
 
 Usage:
     python scripts/install-dependencies.py
@@ -49,15 +49,42 @@ def check_node():
     if command_exists("node"):
         print("✓ Node.js detected")
     else:
-        print("✗ Node.js missing. Install it from https://nodejs.org/")
+        print("✗ Node.js missing. Install Node.js from https://nodejs.org/")
 
 
-def check_cloudflared():
+def install_cloudflared():
     if command_exists("cloudflared"):
         print("✓ Cloudflared detected")
+        return
+
+    system = platform.system()
+    print("\nCloudflared not detected. Attempting installation...")
+
+    if system == "Windows":
+        if command_exists("winget"):
+            run(["winget", "install", "--id", "Cloudflare.cloudflared"])
+        else:
+            print("✗ winget unavailable. Install cloudflared manually.")
+
+    elif system == "Darwin":
+        if command_exists("brew"):
+            run(["brew", "install", "cloudflared"])
+        else:
+            print("✗ Homebrew unavailable. Install cloudflared manually.")
+
+    elif system == "Linux":
+        if command_exists("apt"):
+            run(["sudo", "apt", "install", "cloudflared"])
+        else:
+            print("✗ Automatic Linux install unavailable. Install cloudflared manually.")
+
     else:
-        print("! Cloudflared not found (optional)")
-        print("  Install it for public HTTPS endpoints.")
+        print(f"✗ Unsupported platform: {system}")
+
+    if command_exists("cloudflared"):
+        print("✓ Cloudflared installed")
+    else:
+        print("! Cloudflared still missing")
 
 
 def main():
@@ -73,9 +100,9 @@ def main():
 
     check_node()
     install_supergateway()
-    check_cloudflared()
+    install_cloudflared()
 
-    print("\nDependency check complete.")
+    print("\nDependency setup complete.")
     print("Run:")
     print("  python scripts/mcp-bridge.py")
 
