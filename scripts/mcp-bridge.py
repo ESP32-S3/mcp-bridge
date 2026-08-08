@@ -2,11 +2,8 @@
 """
 MCP Bridge - Cross platform launcher
 
-Starts:
-1. Local MCP stdio server through Supergateway
-2. Optional Cloudflare Tunnel HTTPS endpoint
-
-Works on Windows, macOS, and Linux.
+Starts a local MCP stdio server through Supergateway and optionally exposes it
+through a Cloudflare HTTPS tunnel.
 """
 
 import json
@@ -21,6 +18,18 @@ from pathlib import Path
 CONFIG_FILE = Path(sys.argv[1] if len(sys.argv) > 1 else "config.json")
 processes = []
 
+DEFAULT_CONFIG = {
+    "port": 8000,
+    "serverName": "My MCP Server",
+    "server": {
+        "command": "python",
+        "args": ["server.py"]
+    },
+    "cloudflare": {
+        "enabled": True
+    }
+}
+
 
 def fail(message):
     print(f"\n[ERROR] {message}")
@@ -29,7 +38,7 @@ def fail(message):
 
 def check_command(name):
     if shutil.which(name) is None:
-        fail(f"Missing dependency: {name}. Install it and try again.")
+        fail(f"Missing dependency: {name}. Run scripts/install-dependencies.py first.")
 
 
 def expand_path(value):
@@ -38,9 +47,23 @@ def expand_path(value):
     return os.path.expandvars(os.path.expanduser(value))
 
 
+def create_default_config():
+    if CONFIG_FILE.exists():
+        return
+
+    print(f"No {CONFIG_FILE} found.")
+    print("Creating a starter configuration...")
+
+    with open(CONFIG_FILE, "w", encoding="utf-8") as file:
+        json.dump(DEFAULT_CONFIG, file, indent=2)
+
+    print(f"Created {CONFIG_FILE}.")
+    print("Edit the server.command and server.args values, then run MCP Bridge again.")
+    sys.exit(0)
+
+
 def load_config():
-    if not CONFIG_FILE.exists():
-        fail(f"Missing {CONFIG_FILE}. Copy config.example.json to config.json")
+    create_default_config()
 
     with open(CONFIG_FILE, "r", encoding="utf-8") as file:
         return json.load(file)
@@ -76,7 +99,6 @@ def main():
     check_command("supergateway")
 
     tunnel_enabled = config.get("cloudflare", {}).get("enabled", True)
-
     if tunnel_enabled:
         check_command("cloudflared")
 
@@ -102,7 +124,7 @@ def main():
     print(f"Server: {server_name}")
     print(f"Port: {port}")
 
-    mcp_process = [
+    start_process([
         "supergateway",
         "--stdio",
         command,
@@ -111,9 +133,7 @@ def main():
         "streamableHttp",
         "--port",
         port,
-    ]
-
-    start_process(mcp_process, "Supergateway")
+    ], "Supergateway")
 
     time.sleep(2)
 
@@ -126,7 +146,7 @@ def main():
         ], "Cloudflare Tunnel")
 
         print("\nCloudflare tunnel started.")
-        print("Check the cloudflared output above for your HTTPS MCP endpoint.")
+        print("Copy the HTTPS URL from cloudflared output into your AI client.")
     else:
         print(f"\nLocal MCP endpoint: http://localhost:{port}")
 
