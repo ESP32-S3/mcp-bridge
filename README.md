@@ -43,8 +43,10 @@ MCP Bridge is not tied to one application. Examples:
 - Convert stdio MCP servers into HTTP MCP endpoints
 - Works with existing MCP servers without modification
 - Supports Streamable HTTP transport
-- Simple configuration-based setup
-- Works with tunnels, proxies, and local networks
+- Configuration-based setup
+- Cross-platform Python launcher
+- Works on Windows, macOS, and Linux
+- Supports Cloudflare Tunnel and other reverse proxies
 
 ## Quick Start
 
@@ -52,6 +54,7 @@ MCP Bridge is not tied to one application. Examples:
 
 Requirements:
 
+- Python 3.10+
 - Node.js
 - Supergateway
 - An MCP server using stdio transport
@@ -74,14 +77,22 @@ Example:
 {
   "port": 8000,
   "serverName": "My MCP Server",
-  "mcpCommand": "python server.py"
+  "server": {
+    "command": "python",
+    "args": ["server.py"]
+  },
+  "cloudflare": {
+    "enabled": true
+  }
 }
 ```
 
 ### 3. Run
 
-```powershell
-./scripts/mcp-bridge.ps1
+Windows, macOS, and Linux:
+
+```bash
+python scripts/mcp-bridge.py
 ```
 
 You will receive an endpoint like:
@@ -123,7 +134,7 @@ Common issues:
 
 **MCP server does not start**
 
-Verify your command works manually first.
+Verify your command and arguments work manually first.
 
 **Endpoint loads but tools fail**
 
@@ -135,7 +146,6 @@ Confirm Cloudflare Tunnel is installed and running.
 
 ## Roadmap
 
-- Cross-platform launcher
 - Authentication support
 - Docker deployment
 - Multiple MCP server management
