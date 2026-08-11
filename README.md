@@ -4,7 +4,7 @@
 
 MCP Bridge is a cross-platform infrastructure tool for the **Model Context Protocol (MCP)**. It wraps an existing local stdio MCP server with HTTP transport and, when enabled, exposes it through a Cloudflare Tunnel so an MCP-compatible AI client can reach it through an HTTPS URL.
 
-RELEASES PAGE: https://github.com/ESP32-S3/CMD-Chat/releases?utm_source=chatgpt.com
+# DOWNLOAD PAGE: https://github.com/ESP32-S3/CMD-Chat/releases?utm_source=chatgpt.com
 
 **Local MCP server → Supergateway → HTTP → Cloudflare Tunnel → HTTPS MCP endpoint**
 
